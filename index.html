@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Line Drawing Algorithm Visualizer</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: sans-serif;
+    }
+
+    #app {
+      display: flex;
+      gap: 16px;
+      padding: 1rem;
+      width: 100%;
+    }
+
+    #left {
+      flex: 1;
+      min-width: 0;
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      cursor: crosshair;
+      background: #fff;
+    }
+
+    #right {
+      width: 210px;
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .card {
+      background: #f9f9f9;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      padding: 12px 14px;
+    }
+
+    .card-title {
+      font-size: 11px;
+      font-weight: 500;
+      color: #666;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-bottom: 8px;
+    }
+
+    .seg {
+      display: flex;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      overflow: hidden;
+    }
+
+    .seg button {
+      flex: 1;
+      padding: 7px 4px;
+      font-size: 12px;
+      background: #fff;
+      border: none;
+      cursor: pointer;
+      color: #333;
+      border-right: 1px solid #ccc;
+    }
+
+    .seg button:last-child {
+      border-right: none;
+    }
+
+    .seg button.active {
+      background: #007bff;
+      color: #fff;
+    }
+
+    .btn {
+      width: 100%;
+      padding: 7px 10px;
+      font-size: 13px;
+      background: #fff;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    .btn:hover {
+      background: #f0f0f0;
+    }
+
+    .btn.danger {
+      border-color: #dc3545;
+      color: #dc3545;
+    }
+
+    .stat {
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+      padding: 3px 0;
+    }
+
+    .dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      display: inline-block;
+      margin-right: 5px;
+    }
+
+    .legend-row {
+      display: flex;
+      align-items: center;
+      font-size: 12px;
+      color: #555;
+      margin-bottom: 5px;
+    }
+
+    .speed-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .speed-row label {
+      font-size: 12px;
+    }
+
+    .pixel-list {
+      max-height: 90px;
+      overflow-y: auto;
+      font-size: 11px;
+    }
+  </style>
+</head>
+<body>
+
+<div id="app">
+  <div id="left">
+    <canvas id="cv" height="400" style="border: 1px solid black;"></canvas>
+    <div style="margin-top:8px; font-size:12px; color:#555;">
+      Click to place <strong style="color:#2a8f52">P1</strong>, then <strong style="color:#c84820">P2</strong>. Click again to reset and start over.
+    </div>
+  </div>
+  <div id="right">
+    <div class="card">
+      <div class="card-title">Algorithm</div>
+      <div class="seg">
+        <button id="btn-dda" class="active">DDA</button>
+        <button id="btn-bres">Bres</button>
+        <button id="btn-cmp">Both</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Animation</div>
+      <div style="display:flex;gap:6px;margin-bottom:8px;">
+        <button class="btn" style="flex:1">▶ Play</button>
+        <button class="btn" style="flex:1">+1 Step</button>
+      </div>
+      <button class="btn">↺ Restart</button>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Stats</div>
+      <div class="stat"><span>Step</span><span id="st-step">—</span></div>
+      <div class="stat"><span>DDA pixels</span><span id="st-dda">—</span></div>
+      <div class="stat"><span>Bres pixels</span><span id="st-bres">—</span></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Legend</div>
+      <div class="legend-row"><span class="dot" style="background:#2a8f52"></span> P1 start</div>
+      <div class="legend-row"><span class="dot" style="background:#c84820"></span> P2 end</div>
+      <div class="legend-row"><span class="dot" style="background:#3a88e8"></span> DDA pixel</div>
+      <div class="legend-row"><span class="dot" style="background:#d49a10"></span> Bresenham pixel</div>
+    </div>
+
+    <div class="card">
+      <button class="btn danger">✕ Full Reset</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // The interactive drawing logic goes here
+  const cv = document.getElementById('cv');
+  const ctx = cv.getContext('2d');
+  ctx.fillStyle = "#f0f0f0";
+  ctx.fillRect(0, 0, cv.width, cv.height);
+  
+  ctx.fillStyle = "#333";
+  ctx.font = "14px sans-serif";
+  ctx.fillText("Grid Canvas Layout Loaded Successfully", 20, 40);
+</script>
+
+</body>
+</html>
