@@ -1,184 +1,216 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Line Drawing Algorithm Visualizer</title>
-  <style>
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
+<h2 class="sr-only">Line Drawing Algorithm Visualizer — DDA and Bresenham step-by-step pixel plotting on an interactive
+  grid</h2>
 
-    body {
-      font-family: sans-serif;
-    }
+<style>
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
 
-    #app {
-      display: flex;
-      gap: 16px;
-      padding: 1rem;
-      width: 100%;
-    }
+  body {
+    font-family: var(--font-sans);
+  }
 
-    #left {
-      flex: 1;
-      min-width: 0;
-    }
+  #app {
+    display: flex;
+    gap: 16px;
+    padding: 1rem 0;
+    width: 100%;
+  }
 
-    canvas {
-      display: block;
-      width: 100%;
-      border: 1px solid #ccc;
-      border-radius: 6px;
-      cursor: crosshair;
-      background: #fff;
-    }
+  #left {
+    flex: 1;
+    min-width: 0;
+  }
 
-    #right {
-      width: 210px;
-      flex-shrink: 0;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
+  canvas {
+    display: block;
+    width: 100%;
+    border: 0.5px solid var(--color-border-tertiary);
+    border-radius: var(--border-radius-md);
+    cursor: crosshair;
+  }
 
-    .card {
-      background: #f9f9f9;
-      border: 1px solid #ddd;
-      border-radius: 8px;
-      padding: 12px 14px;
-    }
+  #right {
+    width: 210px;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
 
-    .card-title {
-      font-size: 11px;
-      font-weight: 500;
-      color: #666;
-      text-transform: uppercase;
-      letter-spacing: 0.04em;
-      margin-bottom: 8px;
-    }
+  .card {
+    background: var(--color-background-primary);
+    border: 0.5px solid var(--color-border-tertiary);
+    border-radius: var(--border-radius-lg);
+    padding: 12px 14px;
+  }
 
-    .seg {
-      display: flex;
-      border: 1px solid #ccc;
-      border-radius: 4px;
-      overflow: hidden;
-    }
+  .card-title {
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--color-text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-bottom: 8px;
+  }
 
-    .seg button {
-      flex: 1;
-      padding: 7px 4px;
-      font-size: 12px;
-      background: #fff;
-      border: none;
-      cursor: pointer;
-      color: #333;
-      border-right: 1px solid #ccc;
-    }
+  .seg {
+    display: flex;
+    gap: 0;
+    border: 0.5px solid var(--color-border-secondary);
+    border-radius: var(--border-radius-md);
+    overflow: hidden;
+  }
 
-    .seg button:last-child {
-      border-right: none;
-    }
+  .seg button {
+    flex: 1;
+    padding: 7px 4px;
+    font-size: 12px;
+    font-weight: 500;
+    background: var(--color-background-primary);
+    border: none;
+    cursor: pointer;
+    color: var(--color-text-secondary);
+    transition: background 0.15s, color 0.15s;
+    border-right: 0.5px solid var(--color-border-tertiary);
+  }
 
-    .seg button.active {
-      background: #007bff;
-      color: #fff;
-    }
+  .seg button:last-child {
+    border-right: none;
+  }
 
-    .btn {
-      width: 100%;
-      padding: 7px 10px;
-      font-size: 13px;
-      background: #fff;
-      border: 1px solid #ccc;
-      border-radius: 4px;
-      cursor: pointer;
-    }
+  .seg button.active {
+    background: var(--color-background-info);
+    color: var(--color-text-info);
+  }
 
-    .btn:hover {
-      background: #f0f0f0;
-    }
+  .btn {
+    width: 100%;
+    padding: 7px 10px;
+    font-size: 13px;
+    font-weight: 500;
+    background: var(--color-background-primary);
+    border: 0.5px solid var(--color-border-secondary);
+    border-radius: var(--border-radius-md);
+    cursor: pointer;
+    color: var(--color-text-primary);
+    transition: background 0.12s;
+  }
 
-    .btn.danger {
-      border-color: #dc3545;
-      color: #dc3545;
-    }
+  .btn:hover {
+    background: var(--color-background-secondary);
+  }
 
-    .stat {
-      display: flex;
-      justify-content: space-between;
-      font-size: 12px;
-      padding: 3px 0;
-    }
+  .btn:active {
+    transform: scale(0.98);
+  }
 
-    .dot {
-      width: 9px;
-      height: 9px;
-      border-radius: 50%;
-      display: inline-block;
-      margin-right: 5px;
-    }
+  .btn.danger {
+    border-color: var(--color-border-danger);
+    color: var(--color-text-danger);
+  }
 
-    .legend-row {
-      display: flex;
-      align-items: center;
-      font-size: 12px;
-      color: #555;
-      margin-bottom: 5px;
-    }
+  .stat {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 12px;
+    padding: 3px 0;
+  }
 
-    .speed-row {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
+  .stat-lbl {
+    color: var(--color-text-secondary);
+  }
 
-    .speed-row label {
-      font-size: 12px;
-    }
+  .stat-val {
+    font-weight: 500;
+    font-family: var(--font-mono);
+  }
 
-    .pixel-list {
-      max-height: 90px;
-      overflow-y: auto;
-      font-size: 11px;
-    }
-  </style>
-</head>
-<body>
+  .dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    display: inline-block;
+    margin-right: 5px;
+    flex-shrink: 0;
+  }
+
+  .legend-row {
+    display: flex;
+    align-items: center;
+    font-size: 12px;
+    color: var(--color-text-secondary);
+    margin-bottom: 5px;
+  }
+
+  .speed-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .speed-row label {
+    font-size: 12px;
+    color: var(--color-text-secondary);
+    white-space: nowrap;
+  }
+
+  .speed-row input {
+    flex: 1;
+  }
+
+  .pixel-list {
+    max-height: 90px;
+    overflow-y: auto;
+    font-size: 11px;
+    font-family: var(--font-mono);
+    color: var(--color-text-secondary);
+    line-height: 1.6;
+  }
+</style>
 
 <div id="app">
   <div id="left">
-    <canvas id="cv" height="400" style="border: 1px solid black;"></canvas>
-    <div style="margin-top:8px; font-size:12px; color:#555;">
-      Click to place <strong style="color:#2a8f52">P1</strong>, then <strong style="color:#c84820">P2</strong>. Click again to reset and start over.
+    <canvas id="cv"></canvas>
+    <div style="margin-top:8px; font-size:12px; color:var(--color-text-secondary);">
+      Click to place <strong style="color:#2a8f52">P1</strong>, then <strong style="color:#c84820">P2</strong>. Click
+      again to reset and start over.
     </div>
   </div>
   <div id="right">
     <div class="card">
       <div class="card-title">Algorithm</div>
       <div class="seg">
-        <button id="btn-dda" class="active">DDA</button>
-        <button id="btn-bres">Bres</button>
-        <button id="btn-cmp">Both</button>
+        <button id="btn-dda" class="active" onclick="setMode('dda')">DDA</button>
+        <button id="btn-bres" onclick="setMode('bres')">Bres</button>
+        <button id="btn-cmp" onclick="setMode('compare')">Both</button>
       </div>
     </div>
 
     <div class="card">
       <div class="card-title">Animation</div>
       <div style="display:flex;gap:6px;margin-bottom:8px;">
-        <button class="btn" style="flex:1">▶ Play</button>
-        <button class="btn" style="flex:1">+1 Step</button>
+        <button class="btn" style="flex:1" onclick="startAnim()">▶ Play</button>
+        <button class="btn" style="flex:1" onclick="stepOnce()">+1 Step</button>
       </div>
-      <button class="btn">↺ Restart</button>
+      <button class="btn" onclick="resetAnim()">↺ Restart</button>
+      <div class="speed-row" style="margin-top:8px;">
+        <label>Speed</label>
+        <input type="range" id="speed" min="30" max="500" value="150" step="10" oninput="updateSpeed(this.value)">
+        <span id="speed-lbl" style="font-size:11px;font-family:var(--font-mono);min-width:36px;">150ms</span>
+      </div>
     </div>
 
     <div class="card">
       <div class="card-title">Stats</div>
-      <div class="stat"><span>Step</span><span id="st-step">—</span></div>
-      <div class="stat"><span>DDA pixels</span><span id="st-dda">—</span></div>
-      <div class="stat"><span>Bres pixels</span><span id="st-bres">—</span></div>
+      <div class="stat"><span class="stat-lbl">Step</span><span class="stat-val" id="st-step">—</span></div>
+      <div class="stat"><span class="stat-lbl">DDA pixels</span><span class="stat-val" id="st-dda">—</span></div>
+      <div class="stat"><span class="stat-lbl">Bres pixels</span><span class="stat-val" id="st-bres">—</span></div>
+      <div class="stat"><span class="stat-lbl">Slope</span><span class="stat-val" id="st-slope">—</span></div>
+      <div class="stat"><span class="stat-lbl">dx / dy</span><span class="stat-val" id="st-dxdy">—</span></div>
     </div>
 
     <div class="card">
@@ -187,25 +219,373 @@
       <div class="legend-row"><span class="dot" style="background:#c84820"></span> P2 end</div>
       <div class="legend-row"><span class="dot" style="background:#3a88e8"></span> DDA pixel</div>
       <div class="legend-row"><span class="dot" style="background:#d49a10"></span> Bresenham pixel</div>
+      <div class="legend-row"><span class="dot" style="background:#8855cc"></span> Overlap (both)</div>
     </div>
 
     <div class="card">
-      <button class="btn danger">✕ Full Reset</button>
+      <button class="btn danger" onclick="fullReset()">✕ Full Reset</button>
+    </div>
+
+    <div class="card" id="pixel-card" style="display:none">
+      <div class="card-title" id="pixel-title">Pixels drawn</div>
+      <div class="pixel-list" id="pixel-list"></div>
+    </div>
+
+    <div class="card" id="dda-float-card" style="display:none">
+      <div class="card-title">DDA Float Values</div>
+      <div class="stat"><span class="stat-lbl">xi (Δx step)</span><span class="stat-val" id="dda-xi">—</span></div>
+      <div class="stat"><span class="stat-lbl">yi (Δy step)</span><span class="stat-val" id="dda-yi">—</span></div>
+      <div class="stat"><span class="stat-lbl">Total steps</span><span class="stat-val" id="dda-steps">—</span></div>
+      <div style="border-top:0.5px solid var(--color-border-tertiary);margin:8px 0 6px;"></div>
+      <div
+        style="display:grid;grid-template-columns:18px 1fr 1fr 1fr;gap:2px 6px;font-size:10px;font-family:var(--font-mono);color:var(--color-text-secondary);font-weight:600;padding-bottom:3px;">
+        <span>i</span><span>x (float)</span><span>y (float)</span><span>pixel</span>
+      </div>
+      <div class="pixel-list" id="dda-float-list" style="max-height:140px;margin-top:2px;"></div>
     </div>
   </div>
 </div>
 
 <script>
-  // The interactive drawing logic goes here
   const cv = document.getElementById('cv');
   const ctx = cv.getContext('2d');
-  ctx.fillStyle = "#f0f0f0";
-  ctx.fillRect(0, 0, cv.width, cv.height);
-  
-  ctx.fillStyle = "#333";
-  ctx.font = "14px sans-serif";
-  ctx.fillText("Grid Canvas Layout Loaded Successfully", 20, 40);
-</script>
 
-</body>
-</html>
+  const COLS = 26, ROWS = 18, CS = 26;
+  const OX = 28, OY = 20;
+
+  let W, H;
+  function resize() {
+    const parent = cv.parentElement;
+    const cw = parent.clientWidth;
+    W = OX + COLS * CS + 2;
+    H = OY + ROWS * CS + 18;
+    cv.width = W; cv.height = H;
+    cv.style.width = Math.min(cw, W) + 'px';
+    draw();
+  }
+
+  let p1 = null, p2 = null;
+  let ddaPx = [], bresPx = [];
+  let mode = 'dda';
+  let animStep = 0, animating = false, animDelay = 150, animTimer = null;
+
+  function cellX(gx) { return OX + gx * CS; }
+  function cellY(gy) { return OY + gy * CS; }
+
+  function isDark() { return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches; }
+
+  function getColors() {
+    const dark = isDark();
+    return {
+      bg: dark ? '#1a1a22' : '#ffffff',
+      grid: dark ? '#2a2a3a' : '#e8e8ef',
+      gridText: dark ? '#555570' : '#aaaabc',
+      text: dark ? '#e0e0ee' : '#1a1a2e',
+      axisLine: dark ? '#333348' : '#d0d0e0',
+    };
+  }
+
+  let ddaFloats = [];        // one entry per raw iteration
+  let ddaFloatAtPixel = [];  // maps pixel index -> float iteration index
+
+  function dda(x1, y1, x2, y2) {
+    const pts = [];
+    ddaFloats = [];
+    ddaFloatAtPixel = [];
+    const dx = x2 - x1, dy = y2 - y1;
+    const steps = Math.max(Math.abs(dx), Math.abs(dy));
+    if (steps === 0) {
+      pts.push({ x: x1, y: y1 });
+      ddaFloats.push({ fx: x1, fy: y1, px: x1, py: y1, xi: 0, yi: 0 });
+      ddaFloatAtPixel.push(0);
+      return pts;
+    }
+    const xi = dx / steps, yi = dy / steps;
+    let x = x1, y = y1;
+    for (let i = 0; i <= steps; i++) {
+      const px = Math.round(x), py = Math.round(y);
+      ddaFloats.push({ fx: x, fy: y, px, py, xi, yi });
+      if (!pts.length || pts[pts.length - 1].x !== px || pts[pts.length - 1].y !== py) {
+        pts.push({ x: px, y: py });
+        ddaFloatAtPixel.push(i);
+      }
+      x += xi; y += yi;
+    }
+    return pts;
+  }
+
+  function bresenham(x1, y1, x2, y2) {
+    const pts = [];
+    let dx = Math.abs(x2 - x1), dy = Math.abs(y2 - y1);
+    let sx = (x1 < x2) ? 1 : -1, sy = (y1 < y2) ? 1 : -1;
+    let err = dx - dy, x = x1, y = y1;
+    while (true) {
+      pts.push({ x, y });
+      if (x === x2 && y === y2) break;
+      const e2 = 2 * err;
+      if (e2 > -dy) { err -= dy; x += sx; }
+      if (e2 < dx) { err += dx; y += sy; }
+    }
+    return pts;
+  }
+
+  function compute() {
+    if (!p1 || !p2) return;
+    ddaPx = dda(p1.x, p1.y, p2.x, p2.y);
+    bresPx = bresenham(p1.x, p1.y, p2.x, p2.y);
+    animStep = maxSteps();
+    updateStats();
+    updatePixelList();
+    draw();
+  }
+
+  function maxSteps() {
+    if (mode === 'dda') return ddaPx.length;
+    if (mode === 'bres') return bresPx.length;
+    return Math.max(ddaPx.length, bresPx.length);
+  }
+
+  function updateStats() {
+    document.getElementById('st-dda').textContent = ddaPx.length || '—';
+    document.getElementById('st-bres').textContent = bresPx.length || '—';
+    if (p1 && p2) {
+      const dx = p2.x - p1.x, dy = p2.y - p1.y;
+      const slope = dx === 0 ? '∞' : (dy / dx).toFixed(2);
+      document.getElementById('st-slope').textContent = slope;
+      document.getElementById('st-dxdy').textContent = dx + ' / ' + dy;
+    }
+    const tot = maxSteps();
+    document.getElementById('st-step').textContent = (p1 && p2) ? animStep + ' / ' + tot : '—';
+  }
+
+  function updatePixelList() {
+    const card = document.getElementById('pixel-card');
+    const list = document.getElementById('pixel-list');
+    const title = document.getElementById('pixel-title');
+    const floatCard = document.getElementById('dda-float-card');
+
+    if (!p1 || !p2) {
+      card.style.display = 'none';
+      floatCard.style.display = 'none';
+      return;
+    }
+
+    card.style.display = 'block';
+    let px = mode === 'bres' ? bresPx : ddaPx;
+    title.textContent = (mode === 'bres' ? 'Bresenham' : 'DDA') + ' pixels (' + px.length + ')';
+    list.textContent = px.slice(0, animStep).map(p => '(' + p.x + ',' + p.y + ')').join('  ');
+
+    // Show DDA float card only in DDA mode
+    if (mode === 'dda' && ddaFloats.length) {
+      floatCard.style.display = 'block';
+      const f0 = ddaFloats[0];
+      document.getElementById('dda-xi').textContent = f0.xi.toFixed(4);
+      document.getElementById('dda-yi').textContent = f0.yi.toFixed(4);
+      document.getElementById('dda-steps').textContent = ddaFloats.length - 1;
+
+      // Map animStep (pixel index) to raw float iteration index
+      const maxFloatIdx = animStep > 0 ? (ddaFloatAtPixel[Math.min(animStep, ddaFloatAtPixel.length) - 1] ?? ddaFloats.length - 1) : -1;
+      const visible = ddaFloats.slice(0, maxFloatIdx + 1);
+      document.getElementById('dda-float-list').innerHTML = visible.map((f, i) => {
+        const isCurrent = i === maxFloatIdx;
+        const rowStyle = isCurrent ? 'color:var(--color-text-info);font-weight:700;background:var(--color-background-info);border-radius:3px;padding:0 2px;' : '';
+        return `<div style="display:grid;grid-template-columns:18px 1fr 1fr 1fr;gap:1px 6px;font-size:10px;font-family:var(--font-mono);line-height:1.8;${rowStyle}">` +
+          `<span>${i}</span>` +
+          `<span>${f.fx.toFixed(3)}</span>` +
+          `<span>${f.fy.toFixed(3)}</span>` +
+          `<span style="color:#3a88e8">(${f.px},${f.py})</span>` +
+          `</div>`;
+      }).join('');
+
+      // Auto-scroll to bottom
+      const fl = document.getElementById('dda-float-list');
+      fl.scrollTop = fl.scrollHeight;
+    } else {
+      floatCard.style.display = 'none';
+    }
+  }
+
+  function draw() {
+    const c = getColors();
+    ctx.clearRect(0, 0, W, H);
+    ctx.fillStyle = c.bg;
+    ctx.fillRect(0, 0, W, H);
+
+    ctx.strokeStyle = c.grid;
+    ctx.lineWidth = 0.5;
+    for (let i = 0; i <= COLS; i++) {
+      ctx.beginPath();
+      ctx.moveTo(cellX(i), OY);
+      ctx.lineTo(cellX(i), OY + ROWS * CS);
+      ctx.stroke();
+    }
+    for (let j = 0; j <= ROWS; j++) {
+      ctx.beginPath();
+      ctx.moveTo(OX, cellY(j));
+      ctx.lineTo(OX + COLS * CS, cellY(j));
+      ctx.stroke();
+    }
+
+    ctx.fillStyle = c.gridText;
+    ctx.font = '9px var(--font-mono, monospace)';
+    ctx.textAlign = 'center';
+    for (let i = 0; i <= COLS; i += 5) {
+      ctx.fillText(i, cellX(i), OY - 5);
+    }
+    ctx.textAlign = 'right';
+    for (let j = 0; j <= ROWS; j += 5) {
+      ctx.fillText(j, OX - 4, cellY(j) + 3);
+    }
+
+    if (!p1 && !p2) {
+      ctx.fillStyle = c.gridText;
+      ctx.font = '13px var(--font-sans, sans-serif)';
+      ctx.textAlign = 'center';
+      ctx.fillText('Click on the grid to place P1', OX + COLS * CS / 2, OY + ROWS * CS / 2 - 8);
+      ctx.fillText('then click again for P2', OX + COLS * CS / 2, OY + ROWS * CS / 2 + 10);
+      return;
+    }
+
+    if (p1 && p2) {
+      const dCount = Math.min(animStep, ddaPx.length);
+      const bCount = Math.min(animStep, bresPx.length);
+
+      if (mode === 'compare') {
+        const ddaSet = new Set(ddaPx.slice(0, dCount).map(p => p.x + ',' + p.y));
+        const bresSet = new Set(bresPx.slice(0, bCount).map(p => p.x + ',' + p.y));
+        const all = new Set([...ddaSet, ...bresSet]);
+        all.forEach(k => {
+          const [gx, gy] = k.split(',').map(Number);
+          const inDda = ddaSet.has(k), inBres = bresSet.has(k);
+          if (gx < 0 || gx >= COLS || gy < 0 || gy >= ROWS) return;
+          const sx = cellX(gx), sy = cellY(gy);
+          if (inDda && inBres) {
+            ctx.fillStyle = '#8855cc';
+            ctx.globalAlpha = 0.82;
+            ctx.fillRect(sx + 1, sy + 1, CS - 2, CS - 2);
+          } else if (inDda) {
+            ctx.fillStyle = '#3a88e8';
+            ctx.globalAlpha = 0.75;
+            ctx.fillRect(sx + 1, sy + 1, (CS - 2) / 2, CS - 2);
+          } else {
+            ctx.fillStyle = '#d49a10';
+            ctx.globalAlpha = 0.75;
+            ctx.fillRect(sx + 1 + (CS - 2) / 2, sy + 1, (CS - 2) / 2, CS - 2);
+          }
+          ctx.globalAlpha = 1;
+        });
+      } else {
+        const px = mode === 'dda' ? ddaPx.slice(0, dCount) : bresPx.slice(0, bCount);
+        const color = mode === 'dda' ? '#3a88e8' : '#d49a10';
+        px.forEach(({ x: gx, y: gy }) => {
+          if (gx < 0 || gx >= COLS || gy < 0 || gy >= ROWS) return;
+          ctx.fillStyle = color;
+          ctx.globalAlpha = 0.8;
+          ctx.fillRect(cellX(gx) + 1, cellY(gy) + 1, CS - 2, CS - 2);
+          ctx.globalAlpha = 1;
+        });
+      }
+
+      const last = (mode === 'dda' ? ddaPx : bresPx)[Math.min(animStep, maxSteps()) - 1];
+      if (last && animStep > 0 && animStep < maxSteps()) {
+        ctx.strokeStyle = mode === 'dda' ? '#3a88e8' : '#d49a10';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(cellX(last.x) + 1, cellY(last.y) + 1, CS - 2, CS - 2);
+      }
+    }
+
+    function drawEndpoint(pt, col, label) {
+      if (!pt || pt.x < 0 || pt.x >= COLS || pt.y < 0 || pt.y >= ROWS) return;
+      const sx = cellX(pt.x), sy = cellY(pt.y);
+      ctx.fillStyle = col;
+      ctx.globalAlpha = 1;
+      ctx.fillRect(sx + 1, sy + 1, CS - 2, CS - 2);
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 9px var(--font-sans,sans-serif)';
+      ctx.textAlign = 'center';
+      ctx.fillText(label, sx + CS / 2, sy + CS / 2 + 3);
+    }
+    drawEndpoint(p1, '#2a8f52', 'P1');
+    drawEndpoint(p2, '#c84820', 'P2');
+
+    if (animStep > 0 && p1 && p2) {
+      const tot = maxSteps();
+      const prog = animStep / tot;
+      ctx.fillStyle = c.axisLine;
+      ctx.fillRect(OX, OY + ROWS * CS + 5, COLS * CS, 3);
+      const col = mode === 'dda' ? '#3a88e8' : mode === 'bres' ? '#d49a10' : '#8855cc';
+      ctx.fillStyle = col;
+      ctx.fillRect(OX, OY + ROWS * CS + 5, Math.round(COLS * CS * prog), 3);
+    }
+  }
+
+  function setMode(m) {
+    mode = m;
+    ['dda', 'bres', 'cmp'].forEach(id => document.getElementById('btn-' + id).classList.remove('active'));
+    const btnId = m === 'compare' ? 'btn-cmp' : 'btn-' + m;
+    document.getElementById(btnId).classList.add('active');
+    if (p1 && p2) { animStep = maxSteps(); }
+    stopAnim();
+    updateStats(); updatePixelList(); draw();
+  }
+
+  function startAnim() {
+    if (!p1 || !p2) return;
+    animStep = 0; animating = true;
+    clearTimeout(animTimer);
+    step();
+  }
+  function step() {
+    if (!animating) return;
+    const tot = maxSteps();
+    if (animStep < tot) {
+      animStep++;
+      updateStats(); updatePixelList(); draw();
+      animTimer = setTimeout(step, animDelay);
+    } else { animating = false; }
+  }
+  function stopAnim() { animating = false; clearTimeout(animTimer); }
+  function stepOnce() {
+    stopAnim();
+    if (p1 && p2 && animStep < maxSteps()) { animStep++; updateStats(); updatePixelList(); draw(); }
+  }
+  function resetAnim() { stopAnim(); animStep = 0; updateStats(); updatePixelList(); draw(); }
+  function fullReset() {
+    stopAnim();
+    p1 = null; p2 = null; ddaPx = []; bresPx = []; animStep = 0;
+    ['st-dda', 'st-bres', 'st-slope', 'st-dxdy', 'st-step'].forEach(id => document.getElementById(id).textContent = '—');
+    document.getElementById('pixel-card').style.display = 'none';
+    draw();
+  }
+  function updateSpeed(v) {
+    animDelay = parseInt(v);
+    document.getElementById('speed-lbl').textContent = v + 'ms';
+  }
+
+  cv.addEventListener('click', e => {
+    const rect = cv.getBoundingClientRect();
+    const scaleX = cv.width / rect.width;
+    const mx = (e.clientX - rect.left) * scaleX;
+    const my = (e.clientY - rect.top) * scaleX;
+    const gx = Math.floor((mx - OX) / CS);
+    const gy = Math.floor((my - OY) / CS);
+    if (gx < 0 || gx >= COLS || gy < 0 || gy >= ROWS) return;
+    if (!p1) {
+      p1 = { x: gx, y: gy }; p2 = null; ddaPx = []; bresPx = []; animStep = 0;
+      draw();
+    } else if (!p2) {
+      if (gx === p1.x && gy === p1.y) return;
+      p2 = { x: gx, y: gy };
+      compute();
+    } else {
+      stopAnim();
+      p1 = { x: gx, y: gy }; p2 = null; ddaPx = []; bresPx = []; animStep = 0;
+      ['st-dda', 'st-bres', 'st-slope', 'st-dxdy', 'st-step'].forEach(id => document.getElementById(id).textContent = '—');
+      document.getElementById('pixel-card').style.display = 'none';
+      draw();
+    }
+  });
+
+  window.addEventListener('resize', resize);
+  resize();
+</script>
